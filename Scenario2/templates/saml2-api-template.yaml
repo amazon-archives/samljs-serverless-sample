@@ -1,0 +1,192 @@
+---
+swagger: "2.0"
+info:
+  version: "2016-12-08T13:43:41Z"
+schemes:
+- "https"
+paths:
+  /saml:
+    get:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "COGNITO_ID"
+        in: "header"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+      security:
+      - JWTParser: []
+      x-amazon-apigateway-integration:
+        credentials: "arn:aws:iam::YOURACCOUNTID:role/SAMLSessions-Delete_awslabs_samldemo"
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestTemplates:
+          application/json: "{\n    \"TableName\": \"SAMLSessions\",\n    \"Key\": {\n\
+            \        \"identityhash\": {\n            \"S\": \"$input.params('COGNITO_ID')\"\
+            \n        }\n    },\n    \"ReturnValues\": \"ALL_OLD\"\n}\n"
+        uri: "arn:aws:apigateway:AWS_REGION:dynamodb:action/DeleteItem"
+        requestParameters:
+          integration.request.header.Content-Type: "'application/x-amzn-json-1.0'"
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        type: "aws"
+    post:
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "RelayState"
+        in: "header"
+        required: false
+        type: "string"
+      - name: "SAMLResponse"
+        in: "header"
+        required: false
+        type: "string"
+      responses:
+        302:
+          description: "302 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Location:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "302"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Location: "integration.response.body.location"
+        requestTemplates:
+          application/x-www-form-urlencoded: "{\n\"SAMLResponse\" :\"$input.params('SAMLResponse')\"\
+            ,\n\"RelayState\" :\"$input.params('RelayState')\",\n\"formparams\" :\
+            \ $input.json('$')\n}\n"
+        uri: "arn:aws:apigateway:AWS_REGION:lambda:path/2015-03-31/functions/arn:aws:lambda:AWS_REGION:YOURACCOUNTID:function:ProcessSAML_awslabs_samldemo/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'POST,GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,COGNITO_ID,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+  /users:
+    get:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+      security:
+      - sigv4: []
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            responseTemplates:
+              application/json: "{\n    \"status\": \"Success\",\n    \"agent\": \"\
+                ${context.identity.userAgent}\"\n}"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Empty"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'POST,GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,COGNITO_ID,Authorization'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        requestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        passthroughBehavior: "when_no_match"
+        type: "mock"
+securityDefinitions:
+  sigv4:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+    x-amazon-apigateway-authtype: "awsSigv4"
+  JWTParser:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+    x-amazon-apigateway-authtype: "custom"
+    x-amazon-apigateway-authorizer:
+      authorizerCredentials: "arn:aws:iam::YOURACCOUNTID:role/SAMLCustomAuth_awslabs_samldemo-APIGWRole"
+      authorizerResultTtlInSeconds: 30
+      authorizerUri: "arn:aws:apigateway:AWS_REGION:lambda:path/2015-03-31/functions/arn:aws:lambda:AWS_REGION:YOURACCOUNTID:function:SAMLCustomAuth_awslabs_samldemo/invocations"
+      type: "token"
+definitions:
+  Empty:
+    type: "object"
+    title: "Empty Schema"

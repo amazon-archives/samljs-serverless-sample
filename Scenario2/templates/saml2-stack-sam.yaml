@@ -1,0 +1,370 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Parameters: 
+  AdfsArn:
+    Type: String
+    Description: ARN for ADFS IdP
+  saml2Key:
+    Type: String
+    Description: Key ID or alias for KMS key to use for encrypting credentials
+  WebsiteBucketName:
+    Type: String
+    Description: Bucket name for a new website
+  IdHash:
+    Type: String
+    Default: "us-east-1:XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+    Description: a hash key for storing an ecrypted DEK for encrypting SAML tokens
+  EncryptionContext:
+    Type: String
+    Default: ADFS
+    Description: an encryption context for encrypted SAML tokens
+
+Resources:
+  GenerateKeyFunction:
+    Type: "AWS::Lambda::Function"
+    Properties: 
+      Handler: "index.handler"
+      FunctionName: "GenerateKey_awslabs_samldemo"
+      Role: 
+        Fn::GetAtt: 
+          - "GenerateKeyRole"
+          - "Arn"
+      Code: 
+        S3Bucket: YOUR_S3_BUCKET
+        S3Key: "generateKey.zip"
+      Runtime: "nodejs4.3"
+      Timeout: "30"
+      Environment:
+        Variables:
+          KMS_KEY_ID: !Ref saml2Key
+          ENC_CONTEXT: !Ref EncryptionContext
+          RAND_HASH: !Ref IdHash
+          SESSION_DDB_TABLE: !Ref SessionTable
+
+  GenerateKeyRole:
+    Type: "AWS::IAM::Role"
+    Properties: 
+      RoleName: "GenerateKeyRole_awslabs_samldemo"
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "lambda.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies: 
+        - 
+          PolicyName: "GenerateKeyPolicy"
+          PolicyDocument: 
+            Version: 2012-10-17
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - "dynamodb:PutItem"
+                Resource: !Join ['', ["arn:aws:dynamodb:",!Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", "table/", !Ref SessionTable]]
+              -
+                Effect: Allow
+                Action:
+                  - "kms:GenerateDataKey*"
+                Resource: !Join ['', ["arn:aws:kms:",!Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", "key/", !Ref saml2Key]]
+
+  ProcessSAMLFunction:
+    Type: "AWS::Lambda::Function"
+    Properties: 
+      FunctionName: "ProcessSAML_awslabs_samldemo"
+      Handler: "ProcessSAML.handler"
+      Role: 
+        Fn::GetAtt: 
+          - "ProcessSAMLRole"
+          - "Arn"
+      Code: 
+        S3Bucket: YOUR_S3_BUCKET
+        S3Key: "saml.zip"
+      Runtime: "nodejs4.3"
+      Timeout: "30"
+      Environment:
+        Variables:
+          ENC_CONTEXT: !Ref EncryptionContext
+          PRINCIPAL_ARN: !Ref AdfsArn
+          REDIRECT_URL: !Join ['', [!GetAtt WebsiteBucket.WebsiteURL, "/index.html"]]
+          ID_HASH: !Ref IdHash
+          SESSION_DDB_TABLE: !Ref SessionTable
+          USER_DDB_TABLE: !Ref UserTable
+
+  ProcessSAMLRole:
+    Type: "AWS::IAM::Role"
+    Properties: 
+      RoleName: "ProcessSAMLRole_awslabs_samldemo"
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "lambda.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies: 
+        - 
+          PolicyName: "ProcessSAMLPolicy"
+          PolicyDocument: 
+            Version: 2012-10-17
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - "dynamodb:PutItem"
+                  - "dynamodb:GetItem"
+                Resource: !Join ['', ["arn:aws:dynamodb:",!Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", "table/", !Ref SessionTable]]
+              -
+                Effect: Allow
+                Action:
+                  - "dynamodb:PutItem"
+                Resource: !Join ['', ["arn:aws:dynamodb:",!Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", "table/", !Ref UserTable]]
+              -
+                Effect: Allow
+                Action:
+                  - "kms:Decrypt*"
+                Resource: !Join ['', ["arn:aws:kms:",!Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", "key/", !Ref saml2Key]]
+
+  CustomAuthFunction:
+    Type: "AWS::Lambda::Function"
+    Properties: 
+      FunctionName: "SAMLCustomAuth_awslabs_samldemo"
+      Handler: "CustomAuth.handler"
+      Role: 
+        Fn::GetAtt: 
+          - "SAMLCustomAuthRole"
+          - "Arn"
+      Code: 
+        S3Bucket: YOUR_S3_BUCKET
+        S3Key: "custom_auth.zip"
+      Runtime: "nodejs4.3"
+      Timeout: "30"
+      Environment:
+        Variables:
+          ENC_CONTEXT: !Ref EncryptionContext
+          SESSION_DDB_TABLE: !Ref SessionTable
+          ID_HASH: !Ref IdHash
+ 
+  SAMLCustomAuthRole:
+    Type: "AWS::IAM::Role"
+    Properties: 
+      RoleName: "SAMLCustomAuthRole_awslabs_samldemo"
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "lambda.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies: 
+        - 
+          PolicyName: "SAMLCustomAuthPolicy"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - "dynamodb:GetItem"
+                Resource: !Join ['', ["arn:aws:dynamodb:",!Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", "table/", !Ref SessionTable]]
+              -
+                Effect: Allow
+                Action:
+                  - "kms:Decrypt*"
+                Resource: !Join ['', ["arn:aws:kms:",!Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", "key/", !Ref saml2Key]]
+
+  WebsiteBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: "PublicRead"
+      BucketName: !Ref WebsiteBucketName
+      WebsiteConfiguration:
+        IndexDocument: "index.html"
+        ErrorDocument: "error.html"
+
+  WebsitePublicPolicy: 
+    Type: "AWS::S3::BucketPolicy"
+    Properties: 
+      Bucket: !Ref WebsiteBucket 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Action: 
+              - "s3:GetObject"
+            Effect: "Allow"
+            Resource: !Join ["", ["arn:aws:s3:::",!Ref WebsiteBucket, "/*"]]
+            Principal: "*"
+
+  SessionTable:
+   Type: 'AWS::DynamoDB::Table'
+   Properties: 
+     TableName: SAMLSessions
+     AttributeDefinitions: 
+       - AttributeName: identityhash
+         AttributeType: S
+     KeySchema: 
+       - AttributeName: identityhash
+         KeyType: HASH
+     ProvisionedThroughput: 
+       ReadCapacityUnits: 5
+       WriteCapacityUnits: 5  
+
+  UserTable:
+   Type: 'AWS::DynamoDB::Table'
+   Properties: 
+     TableName: SAMLUsers
+     AttributeDefinitions: 
+       - AttributeName: CognitoID
+         AttributeType: S
+     KeySchema: 
+       - AttributeName: CognitoID
+         KeyType: HASH
+     ProvisionedThroughput: 
+       ReadCapacityUnits: 5
+       WriteCapacityUnits: 5
+
+  SessionTableDeleteRole:
+    Type: "AWS::IAM::Role"
+    Properties: 
+      RoleName: "SAMLSessions-Delete_awslabs_samldemo"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Action:
+              - "sts:AssumeRole"
+            Principal:
+              Service: "apigateway.amazonaws.com"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies:
+        - 
+          PolicyName: !Join ['', [!Ref SessionTable, "-DeletePolicy"]]
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - "dynamodb:DeleteItem"
+                Resource: !Join ['', ["arn:aws:dynamodb:",!Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", "table/", !Ref SessionTable]]
+
+  CustomAuthInvokeRole:
+    Type: "AWS::IAM::Role"
+    Properties: 
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Action:
+              - "sts:AssumeRole"
+            Principal:
+              Service: "apigateway.amazonaws.com"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies:
+        - 
+          PolicyName: !Join ['', [!Ref CustomAuthFunction, "-InvokePolicy"]]
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+            -
+              Effect: Allow
+              Action:
+                - "lambda:InvokeFunction"
+              Resource: !Join ['', ["arn:aws:lambda:",!Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":function:", !Ref CustomAuthFunction]]
+
+      RoleName: !Join ['', [!Ref CustomAuthFunction, "-APIGWRole"]]
+
+  Saml2ApiDeploy:
+    Type: 'AWS::Serverless::Api'
+    Properties:
+      StageName: dev
+      DefinitionUri: 's3://YOUR_S3_BUCKET/saml2-api.yaml'
+
+  ProcessSAMLFunctionAPIGWPerm:
+      Type: "AWS::Lambda::Permission"
+      Properties: 
+        Action: "lambda:InvokeFunction"
+        FunctionName: !Ref ProcessSAMLFunction
+        Principal: "apigateway.amazonaws.com"
+        SourceArn: !Join ['', ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref Saml2ApiDeploy, "/*/POST/saml"]]
+
+  MockInvokePolicy:
+      Type: "AWS::IAM::ManagedPolicy"
+      Properties: 
+        PolicyDocument: 
+          Version: "2012-10-17"
+          Statement:
+          -
+            Effect: Allow
+            Action:
+              - "execute-api:Invoke"
+            Resource: !Join ['', ["arn:aws:execute-api:",!Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref Saml2ApiDeploy, "/dev/GET/users"]]
+
+Outputs:
+
+  saml2Key:
+    Description: Creation of newly created key
+    Value: !Ref saml2Key
+
+  ApiUrl:
+    Description: URL of your API endpoint
+    Value: !Join
+      - ''
+      - - https://
+        - !Ref Saml2ApiDeploy
+        - '.execute-api.'
+        - !Ref 'AWS::Region'
+        - '.amazonaws.com/dev/saml'
+  
+  WebsiteBucket:
+    Description: New Bucket for hosting this website
+    Value: !Ref WebsiteBucket
+
+  WebsiteURL:
+    Description: New Bucket URL for hosting this website
+    Value: !GetAtt WebsiteBucket.WebsiteURL
+
+  RestApiId:
+    Description: Unique ID of SAML API
+    Value: !Ref Saml2ApiDeploy
+
+  UserTable:
+    Description: User DDB Table
+    Value: !Ref UserTable
+  
+  SessionTable:
+    Description: Session DDB Table
+    Value: !Ref SessionTable
+
+  CustomAuthFunction:
+    Description: Custom Auth Function Name
+    Value: !Ref CustomAuthFunction
+
+  ProcessSAMLFunction:
+    Description: Process SAML Function Name
+    Value: !Ref ProcessSAMLFunction
+
+  GenerateKeyFunction:
+    Description: Generate key function Name
+    Value: !Ref GenerateKeyFunction

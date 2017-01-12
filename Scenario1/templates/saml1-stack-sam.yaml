@@ -1,0 +1,121 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Parameters: 
+  WebsiteBucketName:
+    Type: String
+    Description: Bucket name for a new website
+
+Resources:
+  RedirectFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: "redirect_awslabs_samldemo"
+      Handler: index.handler
+      Runtime: nodejs4.3
+      Role: 
+        Fn::GetAtt: 
+          - "RedirectRole"
+          - "Arn"
+      Code: 
+        S3Bucket: YOUR_S3_BUCKET
+        S3Key: "redirect.zip"
+      Timeout: 30
+      Environment:
+        Variables:
+          REDIRECT_URL: !Join ['', [!GetAtt WebsiteBucket.WebsiteURL, "/index.html"]]
+
+  RedirectRole:
+    Type: "AWS::IAM::Role"
+    Properties: 
+      RoleName: "RedirectRole_awslabs_samldemo"
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "lambda.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+
+  Saml1ApiDeploy:
+    Type: 'AWS::Serverless::Api'
+    Properties:
+      StageName: dev
+      DefinitionUri: 's3://YOUR_S3_BUCKET/saml1-api.yaml'
+      Variables:
+          RedirectFunc: !Ref RedirectFunction
+
+  WebsiteBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: "PublicRead"
+      BucketName: !Ref WebsiteBucketName
+      WebsiteConfiguration:
+        IndexDocument: "index.html"
+        ErrorDocument: "error.html"
+
+  WebsitePublicPolicy: 
+    Type: "AWS::S3::BucketPolicy"
+    Properties: 
+      Bucket: !Ref WebsiteBucket 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Action: 
+              - "s3:GetObject"
+            Effect: "Allow"
+            Resource: !Join ["", ["arn:aws:s3:::",!Ref WebsiteBucket, "/*"]]
+            Principal: "*"
+
+  RedirectFunctionAPIGWPerm:
+      Type: "AWS::Lambda::Permission"
+      Properties: 
+        Action: "lambda:InvokeFunction"
+        FunctionName: !Ref RedirectFunction
+        Principal: "apigateway.amazonaws.com"
+        SourceArn: !Join ['', ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref Saml1ApiDeploy, "/*/POST/saml"]]
+
+  MockInvokePolicy:
+      Type: "AWS::IAM::ManagedPolicy"
+      Properties: 
+        PolicyDocument: 
+          Version: "2012-10-17"
+          Statement:
+          -
+            Effect: Allow
+            Action:
+              - "execute-api:Invoke"
+            Resource: !Join ['', ["arn:aws:execute-api:",!Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref Saml1ApiDeploy, "/dev/GET/users"]]
+
+Outputs:
+
+  ApiUrl:
+    Description: URL of your API endpoint
+    Value: !Join
+      - ''
+      - - https://
+        - !Ref Saml1ApiDeploy
+        - '.execute-api.'
+        - !Ref 'AWS::Region'
+        - '.amazonaws.com/dev/saml'
+  
+  WebsiteBucket:
+    Description: Name of new website bucket
+    Value: !Ref WebsiteBucket
+
+  WebsiteURL:
+    Description: New Bucket URL for hosting this website
+    Value: !GetAtt WebsiteBucket.WebsiteURL
+
+  RestApiId:
+    Description: Unique ID of SAML API
+    Value: !Ref Saml1ApiDeploy
+
+  RedirectFunction:
+    Description: Redirect function Name
+    Value: !Ref RedirectFunction

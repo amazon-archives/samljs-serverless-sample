@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+    <script src="configs.js"></script>
+    <script type="text/javascript" src="lib/axios/dist/axios.standalone.js"></script>
+    <script type="text/javascript" src="lib/CryptoJS/rollups/hmac-sha256.js"></script>
+    <script type="text/javascript" src="lib/CryptoJS/rollups/sha256.js"></script>
+    <script type="text/javascript" src="lib/CryptoJS/components/hmac.js"></script>
+    <script type="text/javascript" src="lib/CryptoJS/components/enc-base64.js"></script>
+    <script type="text/javascript" src="lib/url-template/url-template.js"></script>
+    <script type="text/javascript" src="lib/apiGatewayCore/sigV4Client.js"></script>
+    <script type="text/javascript" src="lib/apiGatewayCore/apiGatewayClient.js"></script>
+    <script type="text/javascript" src="lib/apiGatewayCore/simpleHttpClient.js"></script>
+    <script type="text/javascript" src="lib/apiGatewayCore/utils.js"></script>
+    <script type="text/javascript" src="apigClient.js"></script>
+<head>
+  <title>Cognito SAML Example</title>
+  <script type="text/javascript" src="aws-sdk.min.js"></script>
+  <script type="text/javascript">
+
+const identityPool = configs.identityPool;
+AWS.config.region = configs.region; // Region
+
+AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+    IdentityPoolId: identityPool
+});
+var cognitoidentity = new AWS.CognitoIdentity();
+var identityId = localStorage.getItem('cognitoid');
+
+
+if (identityId != null){
+    console.log('Identity ID: ' + identityId);
+    loginWorkflow();
+}else {
+    console.log('Calling GetID');
+    AWS.config.credentials.get(function(){
+        console.log('Identity ID: ' + AWS.config.credentials.identityId);
+        localStorage.setItem('cognitoid', AWS.config.credentials.identityId);
+        identityId = localStorage.getItem('cognitoid');
+        loginWorkflow();
+    });
+}
+
+//Used for grabbing JWT from SAML parsing redirect
+function getUrlParameter(name) {
+    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+    var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+    var results = regex.exec(location.search);
+    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+};
+
+//Used in RelayState for 2-way JWT verification
+function randomString(length, chars) {
+    var result = '';
+    for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+    return result;
+}
+
+function loginWorkflow(){
+    var activelogin = sessionStorage.getItem('activelogin');
+    if (activelogin=='inProgress'){                                   //ADFS login redirect from API Gateway
+        console.log('Detected ADFS login in progress with activelogin: ' + activelogin);
+        var jwt = getUrlParameter('jwt');
+        sessionStorage.removeItem('activelogin');
+        getSamlCredentials(jwt);
+    } 
+    else if (activelogin === null) {                                 //First page visit. Redirect to ADFS login.
+        console.log('Detected start of login process with activelogin: ' + activelogin);
+        var RPID = encodeURIComponent(configs.relayingPartyId);
+
+        console.log('UnAuthID: ' + AWS.config.credentials.identityId);
+        var rString = randomString(32, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+
+        /*RealyState pattern: UnAuthID##RandomString*/
+        var RelayState = encodeURIComponent(identityId + '##' + rString);
+        var unencoded = "RPID=" + RPID + "&RelayState=" + RelayState;
+        var result = configs.adfsUrl + '?RelayState=' + encodeURIComponent(unencoded);
+        sessionStorage.setItem('activelogin', 'inProgress');
+        window.location = result;
+    }   
+    else {//Credentials exist, page refresh, etc.
+        console.log('activelogin already exists in session and the value is ' + activelogin);
+    }
+}
+
+function getSamlCredentials(jwt) {
+    console.log('inside getSamlCredentials');
+    
+    var apigClient = apigClientFactory.newClient();
+
+    var params = {
+        'COGNITO_ID': identityId
+    };
+    var body = {};
+    var additionalParams = {
+    headers: {
+        'Authorization': jwt
+        }
+    };
+
+    console.log(params);
+
+    apigClient.samlGet(params, body, additionalParams)
+        .then(function (result) {
+            console.log('Successful DDB call');
+            console.log(result);
+            AWS.config.credentials.accessKeyId = result.data.Attributes.credentials.M.Credentials.M.AccessKeyId.S;
+            AWS.config.credentials.secretAccessKey = result.data.Attributes.credentials.M.Credentials.M.SecretAccessKey.S;
+            AWS.config.credentials.sessionToken = result.data.Attributes.credentials.M.Credentials.M.SessionToken.S;
+        }).catch(function (result) {
+            console.log(result);
+    });
+}
+
+function pingApiGateway(){
+    var apigwClient = apigClientFactory.newClient({
+        accessKey: AWS.config.credentials.accessKeyId,
+        secretKey: AWS.config.credentials.secretAccessKey,
+        sessionToken: AWS.config.credentials.sessionToken
+    });
+
+    var params = {};
+    var body = {};
+    var additionalParams = {};
+
+    apigwClient.usersGet(params, body, additionalParams)
+        .then(function (result) {
+            console.log(result);
+            alert('Successful ping: ' + result.data.status + ' - ' + result.data.agent);
+        }).catch(function (result) {
+            alert('Failed ping');
+            console.log(result);
+        });
+}
+
+</script>
+
+</head>
+
+<body>
+
+<h1>Testing SAMLResponse</h1>
+
+<p>After login redirect takes place click the button below to ping API Gateway and test if your credentials have access to the Mock resource</p>
+<button onclick="pingApiGateway()">PING</button>
+</body>
+</html>

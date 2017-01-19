@@ -29,7 +29,7 @@ const redirectURL = process.env.REDIRECT_URL;        //Client application page t
 var plainTextKey;
 var initAttempted = false;
 
-function init(context, resolve) {
+function init(callback, resolve) {
     var params = {
         Key: {
             identityhash: {
@@ -41,7 +41,7 @@ function init(context, resolve) {
     dynamodb.getItem(params, function (err, data) {
         if (err) {
             log('debug',err);
-            context.fail(err);
+            callback(err);
         } else {
             log('debug',data.Item.ciphertextKey['S']);
             decrypt(data.Item.ciphertextKey['S'], function (data) {

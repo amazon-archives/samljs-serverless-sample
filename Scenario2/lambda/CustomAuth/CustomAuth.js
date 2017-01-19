@@ -406,29 +406,25 @@ function verify(event,context, callback){
                     log('debug','INVALID CODE');
                     callback('Unauthorized');
                 }else{
-                    log('debug','VALID CODE');
-                    
-                    const principalId = cognitoId;
-                    // build apiOptions for the AuthPolicy
-                    const apiOptions = {};
-                    const tmp = event.methodArn.split(':');
-                    const apiGatewayArnTmp = tmp[5].split('/');
-                    const awsAccountId = tmp[4];
-                    apiOptions.region = tmp[3];
-                    apiOptions.restApiId = apiGatewayArnTmp[0];
-                    apiOptions.stage = apiGatewayArnTmp[1];
-                    /*
-                    const method = apiGatewayArnTmp[2];
-                    let resource = '/'; // root resource
-                    if (apiGatewayArnTmp[3]) {
-                        resource += apiGatewayArnTmp[3];
-                    }
-                    */
+                    if (data.Item.code['S'] == code){
+                        log('debug','VALID CODE');
+                        
+                        const principalId = cognitoId;
+                        // build apiOptions for the AuthPolicy
+                        const apiOptions = {};
+                        const tmp = event.methodArn.split(':');
+                        const apiGatewayArnTmp = tmp[5].split('/');
+                        const awsAccountId = tmp[4];
+                        apiOptions.region = tmp[3];
+                        apiOptions.restApiId = apiGatewayArnTmp[0];
+                        apiOptions.stage = apiGatewayArnTmp[1];
 
-                    const policy = new AuthPolicy(principalId, awsAccountId, apiOptions);
-                    policy.allowAllMethods();
-                    // policy.allowMethod(AuthPolicy.HttpVerb.GET, "/users/username");
-                    callback(null, policy.build());
+                        const policy = new AuthPolicy(principalId, awsAccountId, apiOptions);
+                        policy.allowAllMethods();
+                        callback(null, policy.build());
+                    }else{
+                        callback('Code in JWT does not match DDB record');
+                    }
                 }
             });
         }

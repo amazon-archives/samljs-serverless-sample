@@ -1,8 +1,8 @@
 # Overview
 This first scenario is less complex; for many organizational requirements, it might be the best route. Users authenticate against ADFS and receive AWS credentials from Amazon Cognito so that they can perform actions in your app. This sample application:
-1.	Exposes a login mechanism to authenticate against ADFS and capture the SAMLResponse header.
-2.	Changes the ADFS-Dev role trust policy to allow users that are in the AWS-Dev Active Directory group to receive temporary AWS credentials from Amazon Cognito.
-3.	Adds a mechanism in the code to select the application role for the user. In this post, the chosen role is ADFS-Dev.
+1. Exposes a login mechanism to authenticate against ADFS and capture the SAMLResponse header.
+2. Changes the ADFS-Dev role trust policy to allow users that are in the AWS-Dev Active Directory group to receive temporary AWS credentials from Amazon Cognito.
+3. Adds a mechanism in the code to select the application role for the user. In this post, the chosen role is ADFS-Dev.
 
 # Prerequsites
 This template will setup a sample application using SAML for authentication. It assumes you are using the following prerequsite blog: https://aws.amazon.com/blogs/security/enabling-federation-to-aws-using-windows-active-directory-adfs-and-saml-2-0/

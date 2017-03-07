@@ -1,7 +1,22 @@
-# Scenario 2
+# Overview
+The first scenario may be sufficient for many organizations but, due to size restrictions, some browsers may drop part or all of a query string when sending a large number of claims in the SAMLResponse. Additionally, for auditing and logging reasons, you may wish to relay SAML assertions via POST only and perform parsing in the backend before sending credentials to the client. This scenario allows you to perform custom business logic and validation as well as putting tracking controls in place. 
 
-Overview & Prerequsites
--
+This scenario will show how these requirements can be achieved in a Serverless application. We also show how different challenges (like XML parsing and JWT exchange) can be done in a Serverless application design. Feel free to mix and match, or swap pieces around to suit your needs.
+
+This scenario uses the following services and features:
+- Cognito for unique ID generation and default role mapping
+- S3 for static website hosting
+- API Gateway for receiving the SAMLResponse POST from ADFS
+- Lambda for processing the SAML assertion using a native XML parser 
+- DynamoDB conditional writes for session tracking exceptions
+- STS for credentials via Lambda
+- KMS for signing JWT tokens
+- API Gateway custom authorizers for controlling per-session access to credentials, using JWT tokens that were signed with KMS keys
+- JavaScript-generated SDK from API Gateway using a service proxy to DynamoDB
+- RelayState in the SAMLRequest to ADFS to transmit the CognitoID and a short code from the client to your AWS backend
+
+
+# Prerequsites
 This template will setup a sample application using SAML for authentication. It assumes you are using the following prerequsite blog: https://aws.amazon.com/blogs/security/enabling-federation-to-aws-using-windows-active-directory-adfs-and-saml-2-0/
 
 In order to sign and JWT tokens you will need an encrypted plaintext key which will be stored in KMS. 

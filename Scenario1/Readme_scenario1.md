@@ -4,9 +4,6 @@ This first scenario is less complex; for many organizational requirements, it mi
 2.	Changes the ADFS-Dev role trust policy to allow users that are in the AWS-Dev Active Directory group to receive temporary AWS credentials from Amazon Cognito.
 3.	Adds a mechanism in the code to select the application role for the user. In this post, the chosen role is ADFS-Dev.
 
-![Alt text](scenario1.png?raw=true "Scenario 1")
-
-
 # Prerequsites
 This template will setup a sample application using SAML for authentication. It assumes you are using the following prerequsite blog: https://aws.amazon.com/blogs/security/enabling-federation-to-aws-using-windows-active-directory-adfs-and-saml-2-0/
 

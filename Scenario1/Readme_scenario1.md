@@ -4,9 +4,7 @@ This first scenario is less complex; for many organizational requirements, it mi
 2.	Changes the ADFS-Dev role trust policy to allow users that are in the AWS-Dev Active Directory group to receive temporary AWS credentials from Amazon Cognito.
 3.	Adds a mechanism in the code to select the application role for the user. In this post, the chosen role is ADFS-Dev.
 
-![alt text][logo]
-
-[logo]:https://github.com/awslabs/samljs-serverless-sample/tree/master/Scenario1/scenario1.png "Scenario 1"
+![Alt text](scenario1.png?raw=true "Scenario 1")
 
 
 # Prerequsites

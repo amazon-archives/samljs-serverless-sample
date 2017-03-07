@@ -24,8 +24,7 @@ In order to sign and JWT tokens you will need an encrypted plaintext key which w
 2. For Key Administrative Permissions locate select your Administrative Role or User Account and for the Key Usage Permissions select the Lambda IAM Role you create earlier. This will allow you to perform administrative actions on the set of keys while the Lambda functions have rights to just create data keys for encryption/decryption and use them to sign JWTs. 
 3. Take note of the Key ID which will be needed for the Lambda functions.
 
-Installation
--
+# Installation
 
 **NOTE: If cloning to an EC2 server with Amazon Linux you can run through all the steps as-is. If running locally you will need to skip ‘npm install’ in step #4 below and run that separately on EC2 to compile the libxml binaries. After that you will update the Lambda function outlined in the instructions at the end of the below steps.**
 

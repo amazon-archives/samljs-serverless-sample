@@ -38,10 +38,10 @@ In order to sign and JWT tokens you will need an encrypted plaintext key which w
 
 2. Upload **templates/saml2-api.yaml** to an S3 deployment bucket in the same region
 
-```
-$cd ./templates
-$aws s3 cp saml2-api.yaml s3://YOUR_DEPLOYMENT_BUCKET/saml2-api.yaml
-```
+  ```
+  $cd ./templates
+  $aws s3 cp saml2-api.yaml s3://YOUR_DEPLOYMENT_BUCKET/saml2-api.yaml
+  ```
 
 3. Build and upload **generateKey.zip** to S3 deployment bucket from **./lambda/GenerateKey**
 

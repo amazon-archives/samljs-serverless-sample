@@ -19,7 +19,8 @@ This scenario uses the following services and features:
 # Prerequsites
 This template will setup a sample application using SAML for authentication. It assumes you are using the following prerequsite blog: https://aws.amazon.com/blogs/security/enabling-federation-to-aws-using-windows-active-directory-adfs-and-saml-2-0/
 
-In order to sign and JWT tokens you will need an encrypted plaintext key which will be stored in KMS. 
+In order to sign and JWT tokens you will need an encrypted plaintext key which will be stored in KMS.
+ 
 1. Navigate to the IAM console and select Encryption Keys then Create Key. Type sessionMaster for your Alias and ensure in the Advanced Options KMS is selected then press Next Step. 
 2. For Key Administrative Permissions locate select your Administrative Role or User Account and for the Key Usage Permissions select the Lambda IAM Role you create earlier. This will allow you to perform administrative actions on the set of keys while the Lambda functions have rights to just create data keys for encryption/decryption and use them to sign JWTs. 
 3. Take note of the Key ID which will be needed for the Lambda functions.

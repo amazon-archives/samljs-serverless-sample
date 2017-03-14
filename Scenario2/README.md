@@ -29,11 +29,12 @@ In order to sign and JWT tokens you will need an encrypted plaintext key which w
 
 **NOTE: If cloning to an EC2 server with Amazon Linux you can run through all the steps as-is. If running locally you will need to skip ‘npm install’ in step #4 below and run that separately on EC2 to compile the libxml binaries. After that you will update the Lambda function outlined in the instructions at the end of the below steps.**
 
-1. open `./templates/saml2-api-template.yaml`
+1. Open `./templates/saml2-api-template.yaml`
 
 - Search and replace **YOURACCOUNTID** with your AWS Account Number
 - Search and replace **AWS_REGION** with the region code (**ensure this is lowercase**, e.g. us-east-1)
 - Save the file as **saml2-api.yaml**
+
 
 2. Upload **templates/saml2-api.yaml** to an S3 deployment bucket in the same region
 

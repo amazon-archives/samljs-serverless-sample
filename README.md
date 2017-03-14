@@ -1,7 +1,7 @@
 # SAML JavaScript Serverless Sample App
 This repository contains sample code and [SAM templates](http://docs.aws.amazon.com/lambda/latest/dg/deploying-lambda-apps.html) for performing SAML AuthN/AuthZ flows to access AWS services from a user-facing application. The sample applications are written in JavaScript with minimal UI or extras in order to act as a tutorial for getting credentials and calling API Gateway endpoints protected by AWS_IAM. This can be extended for use against other AWS Service through IAM roles and other client application such as Native apps.
 
-Detailed readme files are in each sub directory. A walk through tutorial is in a 2-part blog series located [here](https://aws.amazon.com/blogs/compute/).
+Detailed readme files are in each sub directory. A walk through tutorial is in a 2-part blog series located [here](https://aws.amazon.com/blogs/compute/saml-for-your-serverless-javascript-application-part-i/).
 
 
 ## Scenario 1

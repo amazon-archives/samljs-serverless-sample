@@ -31,9 +31,9 @@ In order to sign and JWT tokens you will need an encrypted plaintext key which w
 
 1. Open `./templates/saml2-api-template.yaml`
 
-- Search and replace **YOURACCOUNTID** with your AWS Account Number
-- Search and replace **AWS_REGION** with the region code (**ensure this is lowercase**, e.g. us-east-1)
-- Save the file as **saml2-api.yaml**
+  * Search and replace **YOURACCOUNTID** with your AWS Account Number
+  * Search and replace **AWS_REGION** with the region code (**ensure this is lowercase**, e.g. us-east-1)
+  * Save the file as **saml2-api.yaml**
 
 
 2. Upload **templates/saml2-api.yaml** to an S3 deployment bucket in the same region

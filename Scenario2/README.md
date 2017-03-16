@@ -15,6 +15,7 @@ This scenario uses the following services and features:
 - JavaScript-generated SDK from API Gateway using a service proxy to DynamoDB
 - RelayState in the SAMLRequest to ADFS to transmit the CognitoID and a short code from the client to your AWS backend
 
+For detailed walk-through see the original blog post located here: https://aws.amazon.com/blogs/compute/saml-for-your-serverless-javascript-application-part-ii/
 
 # Prerequsites
 This template will setup a sample application using SAML for authentication. It assumes you are using the following prerequsite blog: https://aws.amazon.com/blogs/security/enabling-federation-to-aws-using-windows-active-directory-adfs-and-saml-2-0/
@@ -155,10 +156,11 @@ Locate the SSH keys for your EC2 instance running Amazon Linux and use SCP to co
   $scp -i ~/..PATH_TO_SSH_KEYS/key.pem ./package.json ec2-user@ec2-XX-XXX-XXX-X.compute-X.amazonaws.com:/home/ec2-user/package.json
   ```
 
-Now SSH to the server, build the package, zip the contents and update the Lambda function in your AWS account:
+Now SSH to the server, build the package, zip the contents and update the Lambda function in your AWS account (install GCC if necessary):
 
   ```
   $ssh -i ~/..PATH_TO_SSH_KEYS/key.pem ec2-user@ec2-XX-XXX-XXX-X.compute-X.amazonaws.com
+  $yum install -y make gcc*
   $npm install
   $zip -r saml.zip .
   $aws lambda update-function-code --function-name ProcessSAML_awslabs_samldemo --zip-file fileb://saml.zip

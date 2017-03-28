@@ -305,7 +305,7 @@ Resources:
     Type: 'AWS::Serverless::Api'
     Properties:
       StageName: dev
-      DefinitionUri: 's3://YOUR_S3_BUCKET/saml2-api.yaml'
+      DefinitionUri: 's3://YOUR_S3_BUCKET/saml2-api-template.yaml'
 
   ProcessSAMLFunctionAPIGWPerm:
       Type: "AWS::Lambda::Permission"

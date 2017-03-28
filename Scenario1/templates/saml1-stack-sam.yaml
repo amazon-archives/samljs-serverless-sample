@@ -51,7 +51,7 @@ Resources:
     Type: 'AWS::Serverless::Api'
     Properties:
       StageName: dev
-      DefinitionUri: 's3://YOUR_S3_BUCKET/saml1-api.yaml'
+      DefinitionUri: 's3://YOUR_S3_BUCKET/saml1-api-template.yaml'
       Variables:
           RedirectFunc: !Ref RedirectFunction
 

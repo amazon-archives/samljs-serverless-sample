@@ -8,6 +8,10 @@ This first scenario is less complex; for many organizational requirements, it mi
 # Prerequsites
 This template will setup a sample application using SAML for authentication. It assumes you are using the following prerequsite blog: https://aws.amazon.com/blogs/security/enabling-federation-to-aws-using-windows-active-directory-adfs-and-saml-2-0/
 
+Prior to installation, you should setup the following in your AWS account:
+  * An S3 bucket in which to store the provided Serverless template
+  * A Cognito Identity Pool with unauthenticated identity access enabled
+
 # Installation
 
 1. Open `./templates/saml1-api-template.yaml`

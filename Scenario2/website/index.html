@@ -122,7 +122,8 @@ function pingApiGateway(){
     var apigwClient = apigClientFactory.newClient({
         accessKey: AWS.config.credentials.accessKeyId,
         secretKey: AWS.config.credentials.secretAccessKey,
-        sessionToken: AWS.config.credentials.sessionToken
+        sessionToken: AWS.config.credentials.sessionToken,
+        region: AWS.config.region
     });
 
     var params = {};

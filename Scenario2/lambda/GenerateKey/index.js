@@ -21,7 +21,7 @@ function log(logLevel, statement) {
     }
 }
 
-function encrypt(context){
+function encrypt(callback){
         var generateDataKeyParams = {
         KeyId: process.env.KMS_KEY_ID,       //Customer Master Key alias
         EncryptionContext: {
@@ -37,7 +37,7 @@ function encrypt(context){
             log('debug', 'CiphertextBlob from KMS: ' + ctBlob);
             var ctBlobB64 = new Buffer(ctBlob).toString('base64');
             log('debug', 'CipherTextBlob as Base64: ' + ctBlobB64);
-            storeCiphertextKey(ctBlobB64, context);
+            storeCiphertextKey(ctBlobB64, callback);
         }
     });
 }

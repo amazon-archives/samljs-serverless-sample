@@ -38,7 +38,7 @@ Resources:
       Code: 
         S3Bucket: YOUR_S3_BUCKET
         S3Key: "generateKey.zip"
-      Runtime: "nodejs4.3"
+      Runtime: "nodejs10.x"
       Timeout: "30"
       Environment:
         Variables:
@@ -92,7 +92,7 @@ Resources:
       Code: 
         S3Bucket: YOUR_S3_BUCKET
         S3Key: "saml.zip"
-      Runtime: "nodejs4.3"
+      Runtime: "nodejs10.x"
       Timeout: "30"
       Environment:
         Variables:
@@ -154,7 +154,7 @@ Resources:
       Code: 
         S3Bucket: YOUR_S3_BUCKET
         S3Key: "custom_auth.zip"
-      Runtime: "nodejs4.3"
+      Runtime: "nodejs10.x"
       Timeout: "30"
       Environment:
         Variables:

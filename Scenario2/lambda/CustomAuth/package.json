@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "njwt": "^0.3.2"
+    "njwt": "^1.0.0"
   }
 }
 

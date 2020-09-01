@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "libxmljs": "^0.18.0",
-    "njwt": "^0.3.2"
+    "njwt": "^1.0.0"
   }
 }
 
